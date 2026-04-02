@@ -1,4 +1,4 @@
-"""从 admissionoffer_20260402 表生成 20260402 版汇总文档。"""
+"""从 admissionoffer 表生成汇总文档。"""
 
 import os
 
@@ -24,7 +24,7 @@ COMBOS: list[tuple[str, list[str]]] = [
     ),
 ]
 
-TABLE = "admissionoffer_20260402"
+TABLE = "admissionoffer"
 
 
 def get_conn():
@@ -92,7 +92,7 @@ def generate_combo_summary():
             lines.append("")
             lines.append("- **抓取时间**: 2026年4月2日")
             lines.append("- **去重口径**：按 `student_name` 去重（同一人拿多校只算 1 人）")
-            lines.append("- **数据范围**：`admissionoffer_20260402` 表，`cohort in (2025, 2026)`")
+            lines.append("- **数据范围**：`admissionoffer` 表，`cohort in (2025, 2026)`")
             lines.append("- **地区**：当前配置为不抓取美国")
             lines.append("- **总人数（去重后）**：")
             lines.append(f"  - **2025**：{totals[2025]}")
@@ -139,7 +139,7 @@ def generate_school_summary():
             lines = []
             lines.append("## 2026 按学校汇总（按学生记录数降序）")
             lines.append("")
-            lines.append("- 数据来源：`admissionoffer_20260402`（归档表）")
+            lines.append("- 数据来源：`admissionoffer` 表")
             lines.append("- 过滤条件：`cohort = 2026`")
             lines.append("")
             lines.append("| 届别 | 地区 | 学校中文名 | 学校英文名 | 学生记录数 | 学生offer合计 | 页面公布该校总offer数 |")

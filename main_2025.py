@@ -1,4 +1,4 @@
-"""入口：同步 2025 届录取数据到数据库（只影响 cohort=2025）。"""
+"""入口：爬取 2025 届录取数据，存入 admissionoffer 表（cohort=2025）。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pony.orm import commit, db_session, select
 import models  # noqa: F401 — 注册实体
 from database import bind, db
 from models import AdmissionOffer
-from scraper_2025 import fetch_all_2025_rows
+from scraper import fetch_all_2025_rows
 
 
 def main() -> None:
@@ -15,6 +15,8 @@ def main() -> None:
     db.generate_mapping(create_tables=True)
 
     rows = fetch_all_2025_rows()
+    print(f"2025 rows fetched: {len(rows)}")
+
     with db_session:
         AdmissionOffer.select(lambda o: o.cohort == 2025).delete(bulk=True)
         for r in rows:
@@ -28,4 +30,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -16,3 +16,4 @@ class AdmissionOffer(db.Entity):
     university_total_offers = Required(int)
     student_name = Required(str)
     student_offers = Required(int)
+    scrape_date = Required(str)

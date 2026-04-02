@@ -27,50 +27,48 @@ COMBOS: list[tuple[str, list[str]]] = [
     ),
 ]
 
-
-def _detect_table(cur) -> str:
-    # 兼容 Pony 默认的大小写/你手动建库的表名
-    cur.execute("SHOW TABLES LIKE 'admissionoffer'")
-    if cur.fetchone():
-        return "admissionoffer"
-    cur.execute("SHOW TABLES LIKE 'AdmissionOffer'")
-    if cur.fetchone():
-        return "AdmissionOffer"
-    raise RuntimeError("找不到 admissionoffer / AdmissionOffer 表")
+TABLE = "admissionoffer"
 
 
 def _count_distinct_by_school_substrings(cur, cohort: int, substrings: list[str]) -> int:
-    """
-    组合里用 school_cn 子串匹配（LIKE），避免中文/空格细微差异导致匹配不到。
-    """
+    """组合里用 school_cn 子串匹配（LIKE），取最新一次爬取的数据。"""
     where_parts = []
     params: list[object] = []
     for s in substrings:
         where_parts.append("school_cn LIKE %s")
         params.append(f"%{s}%")
     where_sql = " OR ".join(where_parts)
+
     sql = f"""
         SELECT COUNT(DISTINCT student_name) AS cnt
-        FROM {TABLE}
-        WHERE cohort = %s AND ({where_sql})
+        FROM {TABLE} t1
+        WHERE cohort = %s
+          AND scrape_date = (
+              SELECT MAX(scrape_date) FROM {TABLE} WHERE cohort = %s
+          )
+          AND ({where_sql})
     """
-    params = [cohort] + params
+    params = [cohort, cohort] + params
     cur.execute(sql, params)
     row = cur.fetchone()
     return int(row[0] if row else 0)
 
 
 def _count_total_students(cur, cohort: int) -> int:
-    cur.execute(f"SELECT COUNT(DISTINCT student_name) FROM {TABLE} WHERE cohort=%s", (cohort,))
+    sql = f"""
+        SELECT COUNT(DISTINCT student_name) AS cnt
+        FROM {TABLE} t1
+        WHERE cohort = %s
+          AND scrape_date = (
+              SELECT MAX(scrape_date) FROM {TABLE} WHERE cohort = %s
+          )
+    """
+    cur.execute(sql, (cohort, cohort))
     row = cur.fetchone()
     return int(row[0] if row else 0)
 
 
-TABLE: str
-
-
 def main() -> None:
-    global TABLE
     conn = pymysql.connect(
         host=os.environ["MOON_DB_HOST"],
         port=int(os.environ.get("MOON_DB_PORT", "3306")),
@@ -81,7 +79,6 @@ def main() -> None:
     )
     try:
         with conn.cursor() as cur:
-            TABLE = _detect_table(cur)
             totals = {c: _count_total_students(cur, c) for c in COHORTS}
             print("组合\t2025%\t2026%")
             for label, schools in COMBOS:
